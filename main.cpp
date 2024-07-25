@@ -32,6 +32,8 @@ struct app_t {
   std::shared_ptr<SDL_Texture> qr_texture;
   float qr_color1[4] = {0, 0, 0, 1};
   float qr_color2[4] = {1, 1, 1, 1};
+  int qr_min_ver     = 1;
+  int qr_max_ver     = 40;
 
   SDL_FRect imgui_rect;
   SDL_FRect main_rect;
@@ -83,42 +85,49 @@ void recompute_layout() {
 }
 
 bool recompute_qr() {
-  using namespace qrcodegen;
-  std::vector<QrSegment> segs = QrSegment::makeSegments(app.qr_text);
-  QrCode qr1                  = QrCode::encodeSegments(segs, QrCode::Ecc::LOW, 1, 40, 2, true);
+  try {
+    using namespace qrcodegen;
+    std::vector<QrSegment> segs = QrSegment::makeSegments(app.qr_text);
+    QrCode qr1                  = QrCode::encodeSegments(segs, QrCode::Ecc::LOW, app.qr_min_ver, app.qr_max_ver, 2, true);
 
-  app.qr_surface = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(qr1.getSize(), qr1.getSize(), SDL_PIXELFORMAT_RGBA8888), SDL_DestroySurface);
-  if (app.qr_surface == nullptr) {
-    std::cerr << "QR surface could not be created! SDL_Error: " << SDL_GetError() << '\n';
-    return false;
-  }
-  Uint8 r1     = static_cast<Uint8>(app.qr_color1[0] * 255.0f);
-  Uint8 g1     = static_cast<Uint8>(app.qr_color1[1] * 255.0f);
-  Uint8 b1     = static_cast<Uint8>(app.qr_color1[2] * 255.0f);
-  Uint8 a1     = static_cast<Uint8>(app.qr_color1[3] * 255.0f);
-  Uint32 rgba1 = (r1 << 24) | (g1 << 16) | (b1 << 8) | a1;
-
-  Uint8 r2     = static_cast<Uint8>(app.qr_color2[0] * 255.0f);
-  Uint8 g2     = static_cast<Uint8>(app.qr_color2[1] * 255.0f);
-  Uint8 b2     = static_cast<Uint8>(app.qr_color2[2] * 255.0f);
-  Uint8 a2     = static_cast<Uint8>(app.qr_color2[3] * 255.0f);
-  Uint32 rgba2 = (r2 << 24) | (g2 << 16) | (b2 << 8) | a2;
-
-  for (int y = 0; y < qr1.getSize(); ++y) {
-    for (int x = 0; x < qr1.getSize(); ++x) {
-      Uint32 color                    = qr1.getModule(x, y) ? rgba1 : rgba2;
-      Uint32* pixels                  = (Uint32*)app.qr_surface.get()->pixels;
-      pixels[(y * qr1.getSize()) + x] = color;
+    app.qr_surface = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(qr1.getSize(), qr1.getSize(), SDL_PIXELFORMAT_RGBA8888), SDL_DestroySurface);
+    if (app.qr_surface == nullptr) {
+      std::cerr << "QR surface could not be created! SDL_Error: " << SDL_GetError() << '\n';
+      return false;
     }
-  }
+    
+    Uint8 r1     = static_cast<Uint8>(app.qr_color1[0] * 255.0f);
+    Uint8 g1     = static_cast<Uint8>(app.qr_color1[1] * 255.0f);
+    Uint8 b1     = static_cast<Uint8>(app.qr_color1[2] * 255.0f);
+    Uint8 a1     = static_cast<Uint8>(app.qr_color1[3] * 255.0f);
+    Uint32 rgba1 = (r1 << 24) | (g1 << 16) | (b1 << 8) | a1;
 
-  app.qr_texture = std::shared_ptr<SDL_Texture>(SDL_CreateTextureFromSurface(app.renderer.get(), app.qr_surface.get()), SDL_DestroyTexture);
-  if (app.qr_texture == nullptr) {
-    std::cerr << "QR texture could not be created! SDL_Error: " << SDL_GetError() << '\n';
+    Uint8 r2     = static_cast<Uint8>(app.qr_color2[0] * 255.0f);
+    Uint8 g2     = static_cast<Uint8>(app.qr_color2[1] * 255.0f);
+    Uint8 b2     = static_cast<Uint8>(app.qr_color2[2] * 255.0f);
+    Uint8 a2     = static_cast<Uint8>(app.qr_color2[3] * 255.0f);
+    Uint32 rgba2 = (r2 << 24) | (g2 << 16) | (b2 << 8) | a2;
+
+    for (int y = 0; y < qr1.getSize(); ++y) {
+      for (int x = 0; x < qr1.getSize(); ++x) {
+        Uint32 color                    = qr1.getModule(x, y) ? rgba1 : rgba2;
+        Uint32* pixels                  = (Uint32*)app.qr_surface.get()->pixels;
+        pixels[(y * qr1.getSize()) + x] = color;
+      }
+    }
+
+    app.qr_texture = std::shared_ptr<SDL_Texture>(SDL_CreateTextureFromSurface(app.renderer.get(), app.qr_surface.get()), SDL_DestroyTexture);
+    if (app.qr_texture == nullptr) {
+      std::cerr << "QR texture could not be created! SDL_Error: " << SDL_GetError() << '\n';
+      return false;
+    }
+
+    SDL_SetTextureScaleMode(app.qr_texture.get(), SDL_SCALEMODE_NEAREST);
+
+  } catch (...) {
     return false;
   }
 
-  SDL_SetTextureScaleMode(app.qr_texture.get(), SDL_SCALEMODE_NEAREST);
   return true;
 }
 
@@ -126,6 +135,12 @@ void app_imgui_render() {
   ImGui::Begin("Main", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
   ImGui::SetWindowPos({app.imgui_rect.x, app.imgui_rect.y});
   ImGui::SetWindowSize({app.imgui_rect.w, app.imgui_rect.h});
+
+  static int min = 0;
+  static int max = 1;
+  if (ImGui::DragIntRange2("Version", &app.qr_min_ver, &app.qr_max_ver, 1.0f, 1, 40, "%d", nullptr, ImGuiSliderFlags_AlwaysClamp)) {
+    recompute_qr();
+  }
 
   if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
     recompute_qr();
