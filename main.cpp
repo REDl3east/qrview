@@ -234,6 +234,9 @@ int app_init() {
   ImGui_ImplSDLRenderer3_Init(app.renderer.get());
   ImGui::StyleColorsDark();
 
+  ImGui::GetIO().IniFilename = NULL;
+  ImGui::GetIO().LogFilename = NULL;
+
   return 1;
 }
 
