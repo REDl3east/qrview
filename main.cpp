@@ -41,25 +41,6 @@ struct app_t {
   SDL_FRect qr_rect;
 } app;
 
-int main(int argc, char** argv) {
-  if (!app_init()) {
-    std::cerr << "App failed to initialized\n";
-    return 1;
-  }
-
-#ifdef __EMSCRIPTEN__
-  emscripten_set_main_loop_arg(app_loop, NULL, 0, 1);
-#else
-  while (!app.quit) {
-    app_loop(NULL);
-  }
-#endif
-
-  app_deinit();
-
-  return 0;
-}
-
 void recompute_layout() {
   int window_w, window_h;
   SDL_GetWindowSize(app.window.get(), &window_w, &window_h);
@@ -85,7 +66,7 @@ void recompute_layout() {
       (float)window_h,
   };
 
-  float qr_size = app.main_rect.h * 0.75f;
+  float qr_size = app.main_rect.h * (app.imgui_open ? 0.75f : 0.90f);
   app.qr_rect   = {
       app.main_rect.x + (app.main_rect.w - qr_size) * 0.5f,
       app.main_rect.y + (app.main_rect.h - qr_size) * 0.5f,
@@ -186,7 +167,7 @@ void app_handle_event(const SDL_Event& event) {
         app.quit = true;
         break;
       }
-      if (code == SDLK_SPACE) {
+      if (code == SDLK_ESCAPE) {
         app.imgui_open = !app.imgui_open;
         recompute_layout();
       }
@@ -267,4 +248,23 @@ void app_loop(void* data) {
 
   ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), app.renderer.get());
   SDL_RenderPresent(app.renderer.get());
+}
+
+int main(int argc, char** argv) {
+  if (!app_init()) {
+    std::cerr << "App failed to initialized\n";
+    return 1;
+  }
+
+#ifdef __EMSCRIPTEN__
+  emscripten_set_main_loop_arg(app_loop, NULL, 0, 1);
+#else
+  while (!app.quit) {
+    app_loop(NULL);
+  }
+#endif
+
+  app_deinit();
+
+  return 0;
 }
