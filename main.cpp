@@ -23,7 +23,8 @@ void app_imgui_render();
 void app_main_render();
 
 struct app_t {
-  bool quit = false;
+  bool quit       = false;
+  bool imgui_open = true;
   std::shared_ptr<SDL_Window> window;
   std::shared_ptr<SDL_Renderer> renderer;
 
@@ -62,12 +63,21 @@ int main(int argc, char** argv) {
 void recompute_layout() {
   int window_w, window_h;
   SDL_GetWindowSize(app.window.get(), &window_w, &window_h);
-  app.imgui_rect = {
-      0,
-      0,
-      (float)window_w * 0.25f,
-      (float)window_h,
-  };
+  if (app.imgui_open) {
+    app.imgui_rect = {
+        0,
+        0,
+        (float)window_w * 0.25f,
+        (float)window_h,
+    };
+  } else {
+    app.imgui_rect = {
+        0,
+        0,
+        0,
+        0,
+    };
+  }
   app.main_rect = {
       app.imgui_rect.w,
       0,
@@ -95,18 +105,16 @@ bool recompute_qr() {
       std::cerr << "QR surface could not be created! SDL_Error: " << SDL_GetError() << '\n';
       return false;
     }
-    
-    Uint8 r1     = static_cast<Uint8>(app.qr_color1[0] * 255.0f);
-    Uint8 g1     = static_cast<Uint8>(app.qr_color1[1] * 255.0f);
-    Uint8 b1     = static_cast<Uint8>(app.qr_color1[2] * 255.0f);
-    Uint8 a1     = static_cast<Uint8>(app.qr_color1[3] * 255.0f);
-    Uint32 rgba1 = (r1 << 24) | (g1 << 16) | (b1 << 8) | a1;
 
-    Uint8 r2     = static_cast<Uint8>(app.qr_color2[0] * 255.0f);
-    Uint8 g2     = static_cast<Uint8>(app.qr_color2[1] * 255.0f);
-    Uint8 b2     = static_cast<Uint8>(app.qr_color2[2] * 255.0f);
-    Uint8 a2     = static_cast<Uint8>(app.qr_color2[3] * 255.0f);
-    Uint32 rgba2 = (r2 << 24) | (g2 << 16) | (b2 << 8) | a2;
+    auto convert_rgb = [](float color[4]) -> Uint32 {
+      Uint8 r1 = static_cast<Uint8>(color[0] * 255.0f);
+      Uint8 g1 = static_cast<Uint8>(color[1] * 255.0f);
+      Uint8 b1 = static_cast<Uint8>(color[2] * 255.0f);
+      Uint8 a1 = static_cast<Uint8>(color[3] * 255.0f);
+      return (r1 << 24) | (g1 << 16) | (b1 << 8) | a1;
+    };
+    Uint32 rgba1 = convert_rgb(app.qr_color1);
+    Uint32 rgba2 = convert_rgb(app.qr_color2);
 
     for (int y = 0; y < qr1.getSize(); ++y) {
       for (int x = 0; x < qr1.getSize(); ++x) {
@@ -132,27 +140,29 @@ bool recompute_qr() {
 }
 
 void app_imgui_render() {
-  ImGui::Begin("Main", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-  ImGui::SetWindowPos({app.imgui_rect.x, app.imgui_rect.y});
-  ImGui::SetWindowSize({app.imgui_rect.w, app.imgui_rect.h});
+  if (app.imgui_open) {
+    ImGui::Begin("Main", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    ImGui::SetWindowPos({app.imgui_rect.x, app.imgui_rect.y});
+    ImGui::SetWindowSize({app.imgui_rect.w, app.imgui_rect.h});
 
-  static int min = 0;
-  static int max = 1;
-  if (ImGui::DragIntRange2("Version", &app.qr_min_ver, &app.qr_max_ver, 1.0f, 1, 40, "%d", nullptr, ImGuiSliderFlags_AlwaysClamp)) {
-    recompute_qr();
-  }
+    static int min = 0;
+    static int max = 1;
+    if (ImGui::DragIntRange2("Version", &app.qr_min_ver, &app.qr_max_ver, 1.0f, 1, 40, "%d", nullptr, ImGuiSliderFlags_AlwaysClamp)) {
+      recompute_qr();
+    }
 
-  if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
-    recompute_qr();
-  }
+    if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
+      recompute_qr();
+    }
 
-  if (ImGui::ColorPicker4("Color 1", app.qr_color1, ImGuiColorEditFlags_AlphaBar)) {
-    recompute_qr();
+    if (ImGui::ColorPicker4("Color 1", app.qr_color1, ImGuiColorEditFlags_AlphaBar)) {
+      recompute_qr();
+    }
+    if (ImGui::ColorPicker4("Color 2", app.qr_color2, ImGuiColorEditFlags_AlphaBar)) {
+      recompute_qr();
+    }
+    ImGui::End();
   }
-  if (ImGui::ColorPicker4("Color 2", app.qr_color2, ImGuiColorEditFlags_AlphaBar)) {
-    recompute_qr();
-  }
-  ImGui::End();
 }
 
 void app_main_render() {
@@ -175,6 +185,10 @@ void app_handle_event(const SDL_Event& event) {
       if (code == SDLK_Q) {
         app.quit = true;
         break;
+      }
+      if (code == SDLK_SPACE) {
+        app.imgui_open = !app.imgui_open;
+        recompute_layout();
       }
 
       break;
