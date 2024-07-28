@@ -43,84 +43,8 @@ struct app_t {
   SDL_FRect qr_rect;
 } app;
 
-void recompute_layout() {
-  int window_w, window_h;
-  SDL_GetWindowSize(app.window.get(), &window_w, &window_h);
-  if (app.imgui_open) {
-    app.imgui_rect = {
-        0,
-        0,
-        (float)window_w * 0.25f,
-        (float)window_h,
-    };
-  } else {
-    app.imgui_rect = {
-        0,
-        0,
-        0,
-        0,
-    };
-  }
-  app.main_rect = {
-      app.imgui_rect.w,
-      0,
-      (float)window_w - app.imgui_rect.w,
-      (float)window_h,
-  };
-
-  float qr_size = app.main_rect.h * (app.imgui_open ? 0.75f : 0.90f);
-  app.qr_rect   = {
-      app.main_rect.x + (app.main_rect.w - qr_size) * 0.5f,
-      app.main_rect.y + (app.main_rect.h - qr_size) * 0.5f,
-      qr_size,
-      qr_size,
-  };
-}
-
-bool recompute_qr() {
-  uint8_t qr0[qrcodegen_BUFFER_LEN_MAX];
-  uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, (qrcodegen_Ecc)app.qr_ecc, app.qr_min_ver, app.qr_max_ver, (qrcodegen_Mask)app.qr_mask, true);
-
-  if (!ok) {
-    std::cerr << "Failed to encode QR code" << '\n';
-    return false;
-  }
-
-  app.qr_surface = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(qrcodegen_getSize(qr0), qrcodegen_getSize(qr0), SDL_PIXELFORMAT_RGBA8888), SDL_DestroySurface);
-  if (app.qr_surface == nullptr) {
-    std::cerr << "QR surface could not be created! SDL_Error: " << SDL_GetError() << '\n';
-    return false;
-  }
-
-  auto convert_rgb = [](float color[4]) -> Uint32 {
-    Uint8 r1 = static_cast<Uint8>(color[0] * 255.0f);
-    Uint8 g1 = static_cast<Uint8>(color[1] * 255.0f);
-    Uint8 b1 = static_cast<Uint8>(color[2] * 255.0f);
-    Uint8 a1 = static_cast<Uint8>(color[3] * 255.0f);
-    return (r1 << 24) | (g1 << 16) | (b1 << 8) | a1;
-  };
-  Uint32 rgba1 = convert_rgb(app.qr_color1);
-  Uint32 rgba2 = convert_rgb(app.qr_color2);
-
-  for (int y = 0; y < qrcodegen_getSize(qr0); ++y) {
-    for (int x = 0; x < qrcodegen_getSize(qr0); ++x) {
-      Uint32 color                             = qrcodegen_getModule(qr0, x, y) ? rgba1 : rgba2;
-      Uint32* pixels                           = (Uint32*)app.qr_surface.get()->pixels;
-      pixels[(y * qrcodegen_getSize(qr0)) + x] = color;
-    }
-  }
-
-  app.qr_texture = std::shared_ptr<SDL_Texture>(SDL_CreateTextureFromSurface(app.renderer.get(), app.qr_surface.get()), SDL_DestroyTexture);
-  if (app.qr_texture == nullptr) {
-    std::cerr << "QR texture could not be created! SDL_Error: " << SDL_GetError() << '\n';
-    return false;
-  }
-
-  SDL_SetTextureScaleMode(app.qr_texture.get(), SDL_SCALEMODE_NEAREST);
-
-  return true;
-}
+void recompute_layout();
+bool recompute_qr();
 
 void app_imgui_render() {
   if (app.imgui_open) {
@@ -302,4 +226,84 @@ int main(int argc, char** argv) {
   app_deinit();
 
   return 0;
+}
+
+
+void recompute_layout() {
+  int window_w, window_h;
+  SDL_GetWindowSize(app.window.get(), &window_w, &window_h);
+  if (app.imgui_open) {
+    app.imgui_rect = {
+        0,
+        0,
+        (float)window_w * 0.25f,
+        (float)window_h,
+    };
+  } else {
+    app.imgui_rect = {
+        0,
+        0,
+        0,
+        0,
+    };
+  }
+  app.main_rect = {
+      app.imgui_rect.w,
+      0,
+      (float)window_w - app.imgui_rect.w,
+      (float)window_h,
+  };
+
+  float qr_size = app.main_rect.h * (app.imgui_open ? 0.75f : 0.90f);
+  app.qr_rect   = {
+      app.main_rect.x + (app.main_rect.w - qr_size) * 0.5f,
+      app.main_rect.y + (app.main_rect.h - qr_size) * 0.5f,
+      qr_size,
+      qr_size,
+  };
+}
+
+bool recompute_qr() {
+  uint8_t qr0[qrcodegen_BUFFER_LEN_MAX];
+  uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
+  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, (qrcodegen_Ecc)app.qr_ecc, app.qr_min_ver, app.qr_max_ver, (qrcodegen_Mask)app.qr_mask, true);
+
+  if (!ok) {
+    std::cerr << "Failed to encode QR code" << '\n';
+    return false;
+  }
+
+  app.qr_surface = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(qrcodegen_getSize(qr0), qrcodegen_getSize(qr0), SDL_PIXELFORMAT_RGBA8888), SDL_DestroySurface);
+  if (app.qr_surface == nullptr) {
+    std::cerr << "QR surface could not be created! SDL_Error: " << SDL_GetError() << '\n';
+    return false;
+  }
+
+  auto convert_rgb = [](float color[4]) -> Uint32 {
+    Uint8 r1 = static_cast<Uint8>(color[0] * 255.0f);
+    Uint8 g1 = static_cast<Uint8>(color[1] * 255.0f);
+    Uint8 b1 = static_cast<Uint8>(color[2] * 255.0f);
+    Uint8 a1 = static_cast<Uint8>(color[3] * 255.0f);
+    return (r1 << 24) | (g1 << 16) | (b1 << 8) | a1;
+  };
+  Uint32 rgba1 = convert_rgb(app.qr_color1);
+  Uint32 rgba2 = convert_rgb(app.qr_color2);
+
+  for (int y = 0; y < qrcodegen_getSize(qr0); ++y) {
+    for (int x = 0; x < qrcodegen_getSize(qr0); ++x) {
+      Uint32 color                             = qrcodegen_getModule(qr0, x, y) ? rgba1 : rgba2;
+      Uint32* pixels                           = (Uint32*)app.qr_surface.get()->pixels;
+      pixels[(y * qrcodegen_getSize(qr0)) + x] = color;
+    }
+  }
+
+  app.qr_texture = std::shared_ptr<SDL_Texture>(SDL_CreateTextureFromSurface(app.renderer.get(), app.qr_surface.get()), SDL_DestroyTexture);
+  if (app.qr_texture == nullptr) {
+    std::cerr << "QR texture could not be created! SDL_Error: " << SDL_GetError() << '\n';
+    return false;
+  }
+
+  SDL_SetTextureScaleMode(app.qr_texture.get(), SDL_SCALEMODE_NEAREST);
+
+  return true;
 }
