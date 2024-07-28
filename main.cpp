@@ -35,7 +35,8 @@ struct app_t {
   float qr_color2[4] = {1, 1, 1, 1};
   int qr_min_ver     = 1;
   int qr_max_ver     = 40;
-  int qr_mask;
+  int qr_mask        = -1;
+  int qr_ecc         = 0;
 
   SDL_FRect imgui_rect;
   SDL_FRect main_rect;
@@ -79,7 +80,7 @@ void recompute_layout() {
 bool recompute_qr() {
   uint8_t qr0[qrcodegen_BUFFER_LEN_MAX];
   uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, qrcodegen_Ecc_MEDIUM, app.qr_min_ver, app.qr_max_ver, (qrcodegen_Mask)app.qr_mask, true);
+  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, (qrcodegen_Ecc)app.qr_ecc, app.qr_min_ver, app.qr_max_ver, (qrcodegen_Mask)app.qr_mask, true);
 
   if (!ok) {
     std::cerr << "Failed to encode QR code" << '\n';
@@ -130,6 +131,16 @@ void app_imgui_render() {
     bool recompute = false;
 
     if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
+      recompute = true;
+    }
+
+    const char* ecc_combo[] = {
+        "Low",
+        "Medium",
+        "Quartile",
+        "High",
+    };
+    if (ImGui::Combo("ECC", &app.qr_ecc, ecc_combo, IM_ARRAYSIZE(ecc_combo))) {
       recompute = true;
     }
 
