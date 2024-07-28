@@ -37,7 +37,9 @@ struct app_t {
   int qr_max_ver     = 40;
   int qr_mask        = -1;
   int qr_ecc         = 0;
+  bool qr_boost_ecc  = false;
 
+  // layout params
   SDL_FRect imgui_rect;
   SDL_FRect main_rect;
   SDL_FRect qr_rect;
@@ -48,7 +50,7 @@ bool recompute_qr();
 
 void app_imgui_render() {
   if (app.imgui_open) {
-    ImGui::Begin("Main", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    ImGui::Begin("Main", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
     ImGui::SetWindowPos({app.imgui_rect.x, app.imgui_rect.y});
     ImGui::SetWindowSize({app.imgui_rect.w, app.imgui_rect.h});
 
@@ -65,6 +67,9 @@ void app_imgui_render() {
         "High",
     };
     if (ImGui::Combo("ECC", &app.qr_ecc, ecc_combo, IM_ARRAYSIZE(ecc_combo))) {
+      recompute = true;
+    }
+    if (ImGui::Checkbox("Boost ECC", &app.qr_boost_ecc)) {
       recompute = true;
     }
 
@@ -90,6 +95,8 @@ void app_imgui_render() {
       if (app.qr_mask < -1) app.qr_mask = -1;
       if (app.qr_mask > 7) app.qr_mask = 7;
     }
+
+    ImGui::NewLine();
 
     if (ImGui::ColorPicker4("Color 1", app.qr_color1, ImGuiColorEditFlags_AlphaBar)) {
       recompute = true;
@@ -122,10 +129,6 @@ void app_handle_event(const SDL_Event& event) {
     }
     case SDL_EVENT_KEY_DOWN: {
       SDL_Keycode code = event.key.key;
-      if (code == SDLK_Q) {
-        app.quit = true;
-        break;
-      }
       if (code == SDLK_ESCAPE) {
         app.imgui_open = !app.imgui_open;
         recompute_layout();
@@ -228,7 +231,6 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-
 void recompute_layout() {
   int window_w, window_h;
   SDL_GetWindowSize(app.window.get(), &window_w, &window_h);
@@ -266,7 +268,7 @@ void recompute_layout() {
 bool recompute_qr() {
   uint8_t qr0[qrcodegen_BUFFER_LEN_MAX];
   uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, (qrcodegen_Ecc)app.qr_ecc, app.qr_min_ver, app.qr_max_ver, (qrcodegen_Mask)app.qr_mask, true);
+  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, (qrcodegen_Ecc)app.qr_ecc, app.qr_min_ver, app.qr_max_ver, (qrcodegen_Mask)app.qr_mask, app.qr_boost_ecc);
 
   if (!ok) {
     std::cerr << "Failed to encode QR code" << '\n';
