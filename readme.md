@@ -36,3 +36,7 @@ emmake make
 # running the application
 emrun ./qrview.html
 ```
+
+#### Resources
+- https://github.com/zxing/zxing/wiki/Barcode-Contents
+- https://github.com/nayuki/QR-Code-generator
