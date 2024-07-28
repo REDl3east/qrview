@@ -7,8 +7,8 @@ set(IMGUI_SRC_DIR    ${CMAKE_CURRENT_SOURCE_DIR}/libs/imgui)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/libs)
 
 set(MAIN_SRC
-  ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/qrcodegen.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/qrcodegen.cpp
   ${IMGUI_SRC_DIR}/imgui.cpp
   ${IMGUI_SRC_DIR}/imgui_demo.cpp
   ${IMGUI_SRC_DIR}/imgui_draw.cpp
