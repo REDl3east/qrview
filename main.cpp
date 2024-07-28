@@ -113,7 +113,7 @@ void app_imgui_render() {
 }
 
 void app_main_render() {
-  SDL_SetRenderDrawColor(app.renderer.get(), 255, 255, 255, 255);
+  SDL_SetRenderDrawColor(app.renderer.get(), 0x18, 0x18, 0x18, 255);
   SDL_RenderClear(app.renderer.get());
 
   SDL_RenderTexture(app.renderer.get(), app.qr_texture.get(), NULL, &app.qr_rect);
