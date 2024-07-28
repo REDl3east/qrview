@@ -35,6 +35,7 @@ struct app_t {
   float qr_color2[4] = {1, 1, 1, 1};
   int qr_min_ver     = 1;
   int qr_max_ver     = 40;
+  int qr_mask;
 
   SDL_FRect imgui_rect;
   SDL_FRect main_rect;
@@ -78,7 +79,7 @@ void recompute_layout() {
 bool recompute_qr() {
   uint8_t qr0[qrcodegen_BUFFER_LEN_MAX];
   uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
-  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, qrcodegen_Ecc_MEDIUM, app.qr_min_ver, app.qr_max_ver, qrcodegen_Mask_2, true);
+  bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, qrcodegen_Ecc_MEDIUM, app.qr_min_ver, app.qr_max_ver, (qrcodegen_Mask)app.qr_mask, true);
 
   if (!ok) {
     std::cerr << "Failed to encode QR code" << '\n';
@@ -127,6 +128,11 @@ void app_imgui_render() {
     ImGui::SetWindowSize({app.imgui_rect.w, app.imgui_rect.h});
 
     bool recompute = false;
+
+    if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
+      recompute = true;
+    }
+
     if (ImGui::InputInt("Version Min", &app.qr_min_ver, 1, 1)) {
       recompute = true;
       if (app.qr_min_ver > app.qr_max_ver) {
@@ -144,8 +150,10 @@ void app_imgui_render() {
     if (app.qr_max_ver < 1) app.qr_max_ver = 1;
     if (app.qr_max_ver > 40) app.qr_max_ver = 40;
 
-    if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
+    if (ImGui::InputInt("Mask", &app.qr_mask, 1, 1)) {
       recompute = true;
+      if (app.qr_mask < -1) app.qr_mask = -1;
+      if (app.qr_mask > 7) app.qr_mask = 7;
     }
 
     if (ImGui::ColorPicker4("Color 1", app.qr_color1, ImGuiColorEditFlags_AlphaBar)) {
@@ -156,7 +164,7 @@ void app_imgui_render() {
     }
     ImGui::End();
 
-    if(recompute){
+    if (recompute) {
       recompute_qr();
     }
   }
