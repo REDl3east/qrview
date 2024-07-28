@@ -80,8 +80,10 @@ bool recompute_qr() {
   uint8_t tempBuffer[qrcodegen_BUFFER_LEN_MAX];
   bool ok = qrcodegen_encodeText(app.qr_text, tempBuffer, qr0, qrcodegen_Ecc_MEDIUM, app.qr_min_ver, app.qr_max_ver, qrcodegen_Mask_2, true);
 
-  if (!ok)
+  if (!ok) {
+    std::cerr << "Failed to encode QR code" << '\n';
     return false;
+  }
 
   app.qr_surface = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(qrcodegen_getSize(qr0), qrcodegen_getSize(qr0), SDL_PIXELFORMAT_RGBA8888), SDL_DestroySurface);
   if (app.qr_surface == nullptr) {
@@ -101,8 +103,8 @@ bool recompute_qr() {
 
   for (int y = 0; y < qrcodegen_getSize(qr0); ++y) {
     for (int x = 0; x < qrcodegen_getSize(qr0); ++x) {
-      Uint32 color                    = qrcodegen_getModule(qr0, x, y) ? rgba1 : rgba2;
-      Uint32* pixels                  = (Uint32*)app.qr_surface.get()->pixels;
+      Uint32 color                             = qrcodegen_getModule(qr0, x, y) ? rgba1 : rgba2;
+      Uint32* pixels                           = (Uint32*)app.qr_surface.get()->pixels;
       pixels[(y * qrcodegen_getSize(qr0)) + x] = color;
     }
   }
@@ -124,23 +126,39 @@ void app_imgui_render() {
     ImGui::SetWindowPos({app.imgui_rect.x, app.imgui_rect.y});
     ImGui::SetWindowSize({app.imgui_rect.w, app.imgui_rect.h});
 
-    static int min = 0;
-    static int max = 1;
-    if (ImGui::DragIntRange2("Version", &app.qr_min_ver, &app.qr_max_ver, 1.0f, 1, 40, "%d", nullptr, ImGuiSliderFlags_AlwaysClamp)) {
-      recompute_qr();
+    bool recompute = false;
+    if (ImGui::InputInt("Version Min", &app.qr_min_ver, 1, 1)) {
+      recompute = true;
+      if (app.qr_min_ver > app.qr_max_ver) {
+        app.qr_min_ver--;
+      }
     }
+    if (ImGui::InputInt("Version Max", &app.qr_max_ver, 1, 1)) {
+      recompute = true;
+      if (app.qr_max_ver < app.qr_min_ver) {
+        app.qr_max_ver++;
+      }
+    }
+    if (app.qr_min_ver < 1) app.qr_min_ver = 1;
+    if (app.qr_min_ver > 40) app.qr_min_ver = 40;
+    if (app.qr_max_ver < 1) app.qr_max_ver = 1;
+    if (app.qr_max_ver > 40) app.qr_max_ver = 40;
 
     if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
-      recompute_qr();
+      recompute = true;
     }
 
     if (ImGui::ColorPicker4("Color 1", app.qr_color1, ImGuiColorEditFlags_AlphaBar)) {
-      recompute_qr();
+      recompute = true;
     }
     if (ImGui::ColorPicker4("Color 2", app.qr_color2, ImGuiColorEditFlags_AlphaBar)) {
-      recompute_qr();
+      recompute = true;
     }
     ImGui::End();
+
+    if(recompute){
+      recompute_qr();
+    }
   }
 }
 
