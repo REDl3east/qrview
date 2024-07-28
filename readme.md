@@ -14,6 +14,12 @@ make -j 4
 ./qrview
 ```
 
+### Controls
+| Key          | Description                |
+| ------------ | -------------------------- |
+| ESC          | Toggle editor window       |
+
+
 ### Building for Escripten with Linux
 ```bash
 # clone the toolchain
