@@ -12,6 +12,9 @@ make -j 4
 
 # running the application
 ./qrview
+
+# install the application
+sudo make install
 ```
 
 ### Controls

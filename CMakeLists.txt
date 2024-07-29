@@ -35,3 +35,5 @@ if(EMSCRIPTEN)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${USE_FLAGS}")
   set(CMAKE_EXECUTABLE_SUFFIX ".html")
 endif()
+
+install(TARGETS qrview DESTINATION bin)
