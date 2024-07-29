@@ -61,6 +61,31 @@ void app_imgui_render() {
 
     bool recompute = false;
 
+    if (ImGui::Button("Text")) {
+      strncpy(app.qr_text, "Hello, World!", QR_TEXT_LIMIT);
+      recompute_qr();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("URL")) {
+      strncpy(app.qr_text, "https://github.com/REDl3east/qrview", QR_TEXT_LIMIT);
+      recompute_qr();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Email")) {
+      strncpy(app.qr_text, "mailto:someone@yoursite.com?subject=Mail%20from%20Our%20Site", QR_TEXT_LIMIT);
+      recompute_qr();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Phone")) {
+      strncpy(app.qr_text, "tel:+12125551212", QR_TEXT_LIMIT);
+      recompute_qr();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Wifi")) {
+      strncpy(app.qr_text, "WIFI:T:WPA;S:mynetwork;P:mypass;;", QR_TEXT_LIMIT);
+      recompute_qr();
+    }
+
     if (ImGui::InputTextMultiline("Input", app.qr_text, QR_TEXT_LIMIT)) {
       recompute = true;
     }
