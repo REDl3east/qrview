@@ -15,10 +15,10 @@ make -j 4
 ```
 
 ### Controls
-| Key          | Description                |
-| ------------ | -------------------------- |
-| ESC          | Toggle editor window       |
-| LCtrl+S      | Save QR code               |
+| Key          | Description                      |
+| ------------ | -------------------------------- |
+| ESC          | Toggle editor window             |
+| LCtrl + S    | Save QR code (Native build only) |
 
 
 ### Building for Escripten with Linux
