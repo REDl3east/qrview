@@ -18,6 +18,7 @@ make -j 4
 | Key          | Description                |
 | ------------ | -------------------------- |
 | ESC          | Toggle editor window       |
+| LCtrl+S      | Save QR code               |
 
 
 ### Building for Escripten with Linux
