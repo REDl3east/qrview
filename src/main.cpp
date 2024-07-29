@@ -3,6 +3,9 @@
 #include "imgui_impl_sdlrenderer3.h"
 #include "qrcodegen.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 #ifdef __EMSCRIPTEN__
   #include <emscripten/emscripten.h>
 #endif
@@ -13,6 +16,8 @@
 #define INITAL_WINDOW_WIDTH  1280
 #define INITAL_WINDOW_HEIGHT 720
 #define QR_TEXT_LIMIT        1024
+
+#define SAVE_FILE_EVENT (SDL_EVENT_USER + 1)
 
 int app_init();
 void app_deinit();
@@ -129,9 +134,28 @@ void app_handle_event(const SDL_Event& event) {
     }
     case SDL_EVENT_KEY_DOWN: {
       SDL_Keycode code = event.key.key;
+      SDL_Keymod mod   = event.key.mod;
       if (code == SDLK_ESCAPE) {
         app.imgui_open = !app.imgui_open;
         recompute_layout();
+      }
+      if ((mod & SDL_KMOD_LCTRL) && (code == SDLK_S)) {
+        static const SDL_DialogFileFilter filters[] = {
+            {"PNG images", "png"},
+        };
+
+        SDL_ShowSaveFileDialog([](void* userdata, const char* const* filelist, int filter) {
+          if (filelist) {
+            if (!*filelist) return;
+
+            SDL_Event event;
+            SDL_memset(&event, 0, sizeof(event));
+            event.type       = SAVE_FILE_EVENT;
+            event.user.data1 = strdup(*filelist);
+            SDL_PushEvent(&event);
+          }
+        },
+                               nullptr, app.window.get(), filters, 1, nullptr);
       }
 
       break;
@@ -140,7 +164,12 @@ void app_handle_event(const SDL_Event& event) {
       recompute_layout();
       break;
     }
-
+    case SAVE_FILE_EVENT: {
+      char* file = (char*)event.user.data1;
+      stbi_write_png(file, app.qr_surface.get()->w, app.qr_surface.get()->h, 4, app.qr_surface.get()->pixels, app.qr_surface.get()->w * 4);
+      free(file);
+      break;
+    }
     default: {
       break;
     }
@@ -275,7 +304,7 @@ bool recompute_qr() {
     return false;
   }
 
-  app.qr_surface = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(qrcodegen_getSize(qr0), qrcodegen_getSize(qr0), SDL_PIXELFORMAT_RGBA8888), SDL_DestroySurface);
+  app.qr_surface = std::shared_ptr<SDL_Surface>(SDL_CreateSurface(qrcodegen_getSize(qr0), qrcodegen_getSize(qr0), SDL_PIXELFORMAT_ABGR8888), SDL_DestroySurface);
   if (app.qr_surface == nullptr) {
     std::cerr << "QR surface could not be created! SDL_Error: " << SDL_GetError() << '\n';
     return false;
@@ -286,7 +315,7 @@ bool recompute_qr() {
     Uint8 g1 = static_cast<Uint8>(color[1] * 255.0f);
     Uint8 b1 = static_cast<Uint8>(color[2] * 255.0f);
     Uint8 a1 = static_cast<Uint8>(color[3] * 255.0f);
-    return (r1 << 24) | (g1 << 16) | (b1 << 8) | a1;
+    return (a1 << 24) | (b1 << 16) | (g1 << 8) | r1;
   };
   Uint32 rgba1 = convert_rgb(app.qr_color1);
   Uint32 rgba2 = convert_rgb(app.qr_color2);
