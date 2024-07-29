@@ -1,7 +1,7 @@
-# Qrview
+# <img src="./assets/qr.png" alt="alt text" width="100"/> Qrview 
 
 A simple applications to view and generate QR codes!
-![alt text](./assets/qr.png "QR")
+
 
 ### Quick Start
 ```bash
