@@ -1,6 +1,6 @@
 # <img src="./assets/qr.png" alt="alt text" width="100"/> Qrview 
 
-A simple applications to view and generate QR codes! See the application in action at redl3east.github.io/qrview/.
+A simple applications to view and generate QR codes! See the application in action at [redl3east.github.io/qrview/](redl3east.github.io/qrview/).
 
 
 ### Quick Start
